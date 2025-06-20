@@ -1,0 +1,55 @@
+name: Build COD AimAssist EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Debug directory structure
+      shell: pwsh
+      run: |
+        Write-Host "Current directory: $pwd"
+        Write-Host "Directory contents:"
+        Get-ChildItem -Recurse | Format-Table Name, FullName
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Build executable
+      shell: pwsh
+      run: |
+        # التأكد من وجود مجلد src
+        if (-not (Test-Path -Path "src")) {
+            throw "src directory not found!"
+        }
+        
+        # الانتقال إلى مجلد src
+        Set-Location -Path "src"
+        
+        # تنفيذ أمر البناء
+        pyinstaller --onefile --noconsole --name "COD_AimAssist" --icon "assets/icon.ico" --add-data "assets/icon.ico;assets" main.py
+        
+        # العودة إلى الدليل الرئيسي
+        Set-Location -Path ".."
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: COD-AimAssist-EXE
+        path: src/dist/COD_AimAssist.exe
